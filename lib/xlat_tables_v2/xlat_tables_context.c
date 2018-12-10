@@ -19,24 +19,6 @@
 uint64_t mmu_cfg_params[MMU_CFG_PARAM_MAX];
 
 /*
- * Each platform can define the size of its physical and virtual address spaces.
- * If the platform hasn't defined one or both of them, default to
- * ADDR_SPACE_SIZE. The latter is deprecated, though.
- */
-#if ERROR_DEPRECATED
-# ifdef ADDR_SPACE_SIZE
-#  error "ADDR_SPACE_SIZE is deprecated. Use PLAT_xxx_ADDR_SPACE_SIZE instead."
-# endif
-#elif defined(ADDR_SPACE_SIZE)
-# ifndef PLAT_PHY_ADDR_SPACE_SIZE
-#  define PLAT_PHY_ADDR_SPACE_SIZE	ADDR_SPACE_SIZE
-# endif
-# ifndef PLAT_VIRT_ADDR_SPACE_SIZE
-#  define PLAT_VIRT_ADDR_SPACE_SIZE	ADDR_SPACE_SIZE
-# endif
-#endif
-
-/*
  * Allocate and initialise the default translation context for the BL image
  * currently executing.
  */
@@ -56,6 +38,25 @@ void mmap_add(const mmap_region_t *mm)
 	mmap_add_ctx(&tf_xlat_ctx, mm);
 }
 
+void mmap_add_region_alloc_va(unsigned long long base_pa, uintptr_t *base_va,
+			      size_t size, unsigned int attr)
+{
+	mmap_region_t mm = MAP_REGION_ALLOC_VA(base_pa, size, attr);
+
+	mmap_add_region_alloc_va_ctx(&tf_xlat_ctx, &mm);
+
+	*base_va = mm.base_va;
+}
+
+void mmap_add_alloc_va(mmap_region_t *mm)
+{
+	while (mm->granularity != 0U) {
+		assert(mm->base_va == 0U);
+		mmap_add_region_alloc_va_ctx(&tf_xlat_ctx, mm);
+		mm++;
+	}
+}
+
 #if PLAT_XLAT_TABLES_DYNAMIC
 
 int mmap_add_dynamic_region(unsigned long long base_pa, uintptr_t base_va,
@@ -66,6 +67,20 @@ int mmap_add_dynamic_region(unsigned long long base_pa, uintptr_t base_va,
 	return mmap_add_dynamic_region_ctx(&tf_xlat_ctx, &mm);
 }
 
+int mmap_add_dynamic_region_alloc_va(unsigned long long base_pa,
+				     uintptr_t *base_va, size_t size,
+				     unsigned int attr)
+{
+	mmap_region_t mm = MAP_REGION_ALLOC_VA(base_pa, size, attr);
+
+	int rc = mmap_add_dynamic_region_alloc_va_ctx(&tf_xlat_ctx, &mm);
+
+	*base_va = mm.base_va;
+
+	return rc;
+}
+
+
 int mmap_remove_dynamic_region(uintptr_t base_va, size_t size)
 {
 	return mmap_remove_dynamic_region_ctx(&tf_xlat_ctx,
@@ -74,7 +89,7 @@ int mmap_remove_dynamic_region(uintptr_t base_va, size_t size)
 
 #endif /* PLAT_XLAT_TABLES_DYNAMIC */
 
-void init_xlat_tables(void)
+void __init init_xlat_tables(void)
 {
 	assert(tf_xlat_ctx.xlat_regime == EL_REGIME_INVALID);
 
@@ -120,18 +135,6 @@ int xlat_change_mem_attributes(uintptr_t base_va, size_t size, uint32_t attr)
 #endif
 
 #ifdef AARCH32
-
-#if !ERROR_DEPRECATED
-void enable_mmu_secure(unsigned int flags)
-{
-	enable_mmu_svc_mon(flags);
-}
-
-void enable_mmu_direct(unsigned int flags)
-{
-	enable_mmu_direct_svc_mon(flags);
-}
-#endif
 
 void enable_mmu_svc_mon(unsigned int flags)
 {

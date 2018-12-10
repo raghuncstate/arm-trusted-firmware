@@ -9,8 +9,9 @@
 #include <cache_llc.h>
 #include <debug.h>
 #include <marvell_plat_priv.h>
+#include <plat_marvell.h>
 #include <runtime_svc.h>
-#include <smcc.h>
+#include <smccc.h>
 #include "comphy/phy-comphy-cp110.h"
 
 /* #define DEBUG_COMPHY */
@@ -30,6 +31,8 @@
 /* Miscellaneous FID's' */
 #define MV_SIP_DRAM_SIZE	0x82000010
 #define MV_SIP_LLC_ENABLE	0x82000011
+#define MV_SIP_PMU_IRQ_ENABLE	0x82000012
+#define MV_SIP_PMU_IRQ_DISABLE	0x82000013
 
 #define MAX_LANE_NR		6
 #define MVEBU_COMPHY_OFFSET	0x441000
@@ -84,7 +87,7 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 		SMC_RET1(handle, ret);
 	case MV_SIP_COMPHY_POWER_OFF:
 		/* x1:  comphy_base, x2: comphy_index */
-		ret = mvebu_cp110_comphy_power_off(x1, x2);
+		ret = mvebu_cp110_comphy_power_off(x1, x2, x3);
 		SMC_RET1(handle, ret);
 	case MV_SIP_COMPHY_PLL_LOCK:
 		/* x1:  comphy_base, x2: comphy_index */
@@ -109,6 +112,14 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 			llc_runtime_enable(i);
 
 		SMC_RET1(handle, 0);
+#ifdef MVEBU_PMU_IRQ_WA
+	case MV_SIP_PMU_IRQ_ENABLE:
+		mvebu_pmu_interrupt_enable();
+		SMC_RET1(handle, 0);
+	case MV_SIP_PMU_IRQ_DISABLE:
+		mvebu_pmu_interrupt_disable();
+		SMC_RET1(handle, 0);
+#endif
 
 	default:
 		ERROR("%s: unhandled SMC (0x%x)\n", __func__, smc_fid);

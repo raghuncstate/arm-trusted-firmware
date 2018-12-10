@@ -21,7 +21,7 @@
  *****************************************************************************/
 
 /* Special value used to verify platform parameters from BL2 to BL31 */
-#define ARM_BL31_PLAT_PARAM_VAL		0x0f1e2d3c4b5a6978ULL
+#define ARM_BL31_PLAT_PARAM_VAL		ULL(0x0f1e2d3c4b5a6978)
 
 #define ARM_SYSTEM_COUNT		1
 
@@ -34,6 +34,7 @@
 #define ARM_PWR_LVL0		MPIDR_AFFLVL0
 #define ARM_PWR_LVL1		MPIDR_AFFLVL1
 #define ARM_PWR_LVL2		MPIDR_AFFLVL2
+#define ARM_PWR_LVL3		MPIDR_AFFLVL3
 
 /*
  *  Macros for local power states in ARM platforms encoded by State-ID field
@@ -53,9 +54,9 @@
 #define ARM_DRAM_ID			2
 
 /* The first 4KB of Trusted SRAM are used as shared memory */
-#define ARM_TRUSTED_SRAM_BASE		0x04000000
+#define ARM_TRUSTED_SRAM_BASE		UL(0x04000000)
 #define ARM_SHARED_RAM_BASE		ARM_TRUSTED_SRAM_BASE
-#define ARM_SHARED_RAM_SIZE		0x00001000	/* 4 KB */
+#define ARM_SHARED_RAM_SIZE		UL(0x00001000)	/* 4 KB */
 
 /* The remaining Trusted SRAM is used to load the BL images */
 #define ARM_BL_RAM_BASE			(ARM_SHARED_RAM_BASE +	\
@@ -68,7 +69,7 @@
  *   - SCP TZC DRAM: If present, DRAM reserved for SCP use
  *   - AP TZC DRAM: The remaining TZC secured DRAM reserved for AP use
  */
-#define ARM_TZC_DRAM1_SIZE		ULL(0x01000000)
+#define ARM_TZC_DRAM1_SIZE		UL(0x01000000)
 
 #define ARM_SCP_TZC_DRAM1_BASE		(ARM_DRAM1_BASE +		\
 					 ARM_DRAM1_SIZE -		\
@@ -84,7 +85,7 @@
  * placed here.
  */
 #define ARM_EL3_TZC_DRAM1_BASE		(ARM_SCP_TZC_DRAM1_BASE - ARM_EL3_TZC_DRAM1_SIZE)
-#define ARM_EL3_TZC_DRAM1_SIZE		ULL(0x00200000) /* 2 MB */
+#define ARM_EL3_TZC_DRAM1_SIZE		UL(0x00200000) /* 2 MB */
 #define ARM_EL3_TZC_DRAM1_END		(ARM_EL3_TZC_DRAM1_BASE +	\
 					ARM_EL3_TZC_DRAM1_SIZE - 1)
 
@@ -122,7 +123,7 @@
 #define ARM_OPTEE_PAGEABLE_LOAD_BASE	(ARM_AP_TZC_DRAM1_BASE + \
 					 ARM_AP_TZC_DRAM1_SIZE - \
 					 ARM_OPTEE_PAGEABLE_LOAD_SIZE)
-#define ARM_OPTEE_PAGEABLE_LOAD_SIZE	0x400000
+#define ARM_OPTEE_PAGEABLE_LOAD_SIZE	UL(0x400000)
 #define ARM_OPTEE_PAGEABLE_LOAD_MEM	MAP_REGION_FLAT(		\
 					ARM_OPTEE_PAGEABLE_LOAD_BASE,	\
 					ARM_OPTEE_PAGEABLE_LOAD_SIZE,	\
@@ -149,7 +150,7 @@
 #define ARM_DRAM1_END			(ARM_DRAM1_BASE +		\
 					 ARM_DRAM1_SIZE - 1)
 
-#define ARM_DRAM2_BASE			ULL(0x880000000)
+#define ARM_DRAM2_BASE			UL(0x880000000)
 #define ARM_DRAM2_SIZE			PLAT_ARM_DRAM2_SIZE
 #define ARM_DRAM2_END			(ARM_DRAM2_BASE +		\
 					 ARM_DRAM2_SIZE - 1)
@@ -166,45 +167,30 @@
 #define ARM_IRQ_SEC_SGI_7		15
 
 /*
- * List of secure interrupts are deprecated, but are retained only to support
- * legacy configurations.
- */
-#define ARM_G1S_IRQS			ARM_IRQ_SEC_PHY_TIMER,		\
-					ARM_IRQ_SEC_SGI_1,		\
-					ARM_IRQ_SEC_SGI_2,		\
-					ARM_IRQ_SEC_SGI_3,		\
-					ARM_IRQ_SEC_SGI_4,		\
-					ARM_IRQ_SEC_SGI_5,		\
-					ARM_IRQ_SEC_SGI_7
-
-#define ARM_G0_IRQS			ARM_IRQ_SEC_SGI_0,		\
-					ARM_IRQ_SEC_SGI_6
-
-/*
  * Define a list of Group 1 Secure and Group 0 interrupt properties as per GICv3
  * terminology. On a GICv2 system or mode, the lists will be merged and treated
  * as Group 0 interrupts.
  */
 #define ARM_G1S_IRQ_PROPS(grp) \
-	INTR_PROP_DESC(ARM_IRQ_SEC_PHY_TIMER, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_PHY_TIMER, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_LEVEL), \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_1, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_1, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_EDGE), \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_2, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_2, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_EDGE), \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_3, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_3, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_EDGE), \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_4, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_4, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_EDGE), \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_5, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_5, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_EDGE), \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_7, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_7, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_EDGE)
 
 #define ARM_G0_IRQ_PROPS(grp) \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_0, PLAT_SDEI_NORMAL_PRI, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_0, PLAT_SDEI_NORMAL_PRI, (grp), \
 			GIC_INTR_CFG_EDGE), \
-	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_6, GIC_HIGHEST_SEC_PRIORITY, grp, \
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_6, GIC_HIGHEST_SEC_PRIORITY, (grp), \
 			GIC_INTR_CFG_EDGE)
 
 #define ARM_MAP_SHARED_RAM		MAP_REGION_FLAT(		\
@@ -240,6 +226,17 @@
 						ARM_EL3_TZC_DRAM1_BASE,	\
 						ARM_EL3_TZC_DRAM1_SIZE,	\
 						MT_MEMORY | MT_RW | MT_SECURE)
+
+/*
+ * Mapping for the BL1 RW region. This mapping is needed by BL2 in order to
+ * share the Mbed TLS heap. Since the heap is allocated inside BL1, it resides
+ * in the BL1 RW region. Hence, BL2 needs access to the BL1 RW region in order
+ * to be able to access the heap.
+ */
+#define ARM_MAP_BL1_RW		MAP_REGION_FLAT(	\
+					BL1_RW_BASE,	\
+					BL1_RW_LIMIT - BL1_RW_BASE, \
+					MT_MEMORY | MT_RW | MT_SECURE)
 
 /*
  * If SEPARATE_CODE_AND_RODATA=1 we define a region for each section
@@ -281,25 +278,32 @@
 #endif
 
 /*
+ * Map mem_protect flash region with read and write permissions
+ */
+#define ARM_V2M_MAP_MEM_PROTECT		MAP_REGION_FLAT(PLAT_ARM_MEM_PROT_ADDR,	\
+						V2M_FLASH_BLOCK_SIZE,		\
+						MT_DEVICE | MT_RW | MT_SECURE)
+
+/*
  * The max number of regions like RO(code), coherent and data required by
  * different BL stages which need to be mapped in the MMU.
  */
-# define ARM_BL_REGIONS			4
+#define ARM_BL_REGIONS			5
 
 #define MAX_MMAP_REGIONS		(PLAT_ARM_MMAP_ENTRIES +	\
 					 ARM_BL_REGIONS)
 
 /* Memory mapped Generic timer interfaces  */
-#define ARM_SYS_CNTCTL_BASE		0x2a430000
-#define ARM_SYS_CNTREAD_BASE		0x2a800000
-#define ARM_SYS_TIMCTL_BASE		0x2a810000
-#define ARM_SYS_CNT_BASE_S		0x2a820000
-#define ARM_SYS_CNT_BASE_NS		0x2a830000
+#define ARM_SYS_CNTCTL_BASE		UL(0x2a430000)
+#define ARM_SYS_CNTREAD_BASE		UL(0x2a800000)
+#define ARM_SYS_TIMCTL_BASE		UL(0x2a810000)
+#define ARM_SYS_CNT_BASE_S		UL(0x2a820000)
+#define ARM_SYS_CNT_BASE_NS		UL(0x2a830000)
 
 #define ARM_CONSOLE_BAUDRATE		115200
 
 /* Trusted Watchdog constants */
-#define ARM_SP805_TWDG_BASE		0x2a490000
+#define ARM_SP805_TWDG_BASE		UL(0x2a490000)
 #define ARM_SP805_TWDG_CLK_HZ		32768
 /* The TBBR document specifies a watchdog timeout of 256 seconds. SP805
  * asserts reset after two consecutive countdowns (2 x 128 = 256 sec) */
@@ -341,14 +345,14 @@
  * This is known only to the platform as it might have a combination of
  * integrated and external caches.
  */
-#define CACHE_WRITEBACK_GRANULE		(1 << ARM_CACHE_WRITEBACK_SHIFT)
+#define CACHE_WRITEBACK_GRANULE		(U(1) << ARM_CACHE_WRITEBACK_SHIFT)
 
 /*
  * To enable TB_FW_CONFIG to be loaded by BL1, define the corresponding base
  * and limit. Leave enough space of BL2 meminfo.
  */
-#define ARM_TB_FW_CONFIG_BASE		ARM_BL_RAM_BASE + sizeof(meminfo_t)
-#define ARM_TB_FW_CONFIG_LIMIT		ARM_BL_RAM_BASE + PAGE_SIZE
+#define ARM_TB_FW_CONFIG_BASE		(ARM_BL_RAM_BASE + sizeof(meminfo_t))
+#define ARM_TB_FW_CONFIG_LIMIT		(ARM_BL_RAM_BASE + PAGE_SIZE)
 
 /*******************************************************************************
  * BL1 specific defines.
@@ -479,7 +483,7 @@
 #  define TSP_SEC_MEM_SIZE		PLAT_ARM_TRUSTED_DRAM_SIZE
 #  define BL32_BASE			PLAT_ARM_TRUSTED_DRAM_BASE
 #  define BL32_LIMIT			(PLAT_ARM_TRUSTED_DRAM_BASE	\
-						+ (1 << 21))
+						+ (UL(1) << 21))
 # elif ARM_TSP_RAM_LOCATION_ID == ARM_DRAM_ID
 #  define TSP_SEC_MEM_BASE		ARM_AP_TZC_DRAM1_BASE
 #  define TSP_SEC_MEM_SIZE		ARM_AP_TZC_DRAM1_SIZE
@@ -508,7 +512,7 @@
 #define BL2U_LIMIT			BL2_LIMIT
 
 #define NS_BL2U_BASE			ARM_NS_DRAM1_BASE
-#define NS_BL1U_BASE			(PLAT_ARM_NVM_BASE + 0x03EB8000)
+#define NS_BL1U_BASE			(PLAT_ARM_NVM_BASE + UL(0x03EB8000))
 
 /*
  * ID of the secure physical generic timer interrupt used by the TSP.

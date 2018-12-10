@@ -153,7 +153,7 @@ static int fvp_pwr_domain_on(u_register_t mpidr)
 	 */
 	do {
 		psysr = fvp_pwrc_read_psysr(mpidr);
-	} while (psysr & PSYSR_AFF_L0);
+	} while ((psysr & PSYSR_AFF_L0) != 0U);
 
 	fvp_pwrc_write_pponr(mpidr);
 	return rc;
@@ -312,7 +312,7 @@ static int fvp_node_hw_state(u_register_t target_cpu,
 	 * The format of 'power_level' is implementation-defined, but 0 must
 	 * mean a CPU. We also allow 1 to denote the cluster
 	 */
-	if (power_level != ARM_PWR_LVL0 && power_level != ARM_PWR_LVL1)
+	if ((power_level != ARM_PWR_LVL0) && (power_level != ARM_PWR_LVL1))
 		return PSCI_E_INVALID_PARAMS;
 
 	/*
@@ -325,10 +325,10 @@ static int fvp_node_hw_state(u_register_t target_cpu,
 		return PSCI_E_INVALID_PARAMS;
 
 	if (power_level == ARM_PWR_LVL0) {
-		ret = (psysr & PSYSR_AFF_L0) ? HW_ON : HW_OFF;
+		ret = ((psysr & PSYSR_AFF_L0) != 0U) ? HW_ON : HW_OFF;
 	} else {
 		/* power_level == ARM_PWR_LVL1 */
-		ret = (psysr & PSYSR_AFF_L1) ? HW_ON : HW_OFF;
+		ret = ((psysr & PSYSR_AFF_L1) != 0U) ? HW_ON : HW_OFF;
 	}
 
 	return ret;
@@ -416,3 +416,8 @@ plat_psci_ops_t plat_arm_psci_pm_ops = {
 	.read_mem_protect	= arm_psci_read_mem_protect,
 	.write_mem_protect	= arm_nor_psci_write_mem_protect,
 };
+
+const plat_psci_ops_t *plat_arm_psci_override_pm_ops(plat_psci_ops_t *ops)
+{
+	return ops;
+}

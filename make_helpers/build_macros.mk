@@ -177,7 +177,7 @@ endef
 # GZIP
 define GZIP_RULE
 $(1): $(2)
-	@echo "  GZIP    $$@"
+	$(ECHO) "  GZIP    $$@"
 	$(Q)gzip -n -f -9 $$< --stdout > $$@
 endef
 
@@ -199,7 +199,7 @@ $(eval OBJ := $(1)/$(patsubst %.c,%.o,$(notdir $(2))))
 $(eval DEP := $(patsubst %.o,%.d,$(OBJ)))
 
 $(OBJ): $(2) $(filter-out %.d,$(MAKEFILE_LIST)) | lib$(3)_dirs
-	@echo "  CC      $$<"
+	$$(ECHO) "  CC      $$<"
 	$$(Q)$$(CC) $$(TF_CFLAGS) $$(CFLAGS) $(MAKE_DEP) -c $$< -o $$@
 
 -include $(DEP)
@@ -218,7 +218,7 @@ $(eval DEP := $(patsubst %.o,%.d,$(OBJ)))
 $(eval IMAGE := IMAGE_BL$(call uppercase,$(3)))
 
 $(OBJ): $(2) $(filter-out %.d,$(MAKEFILE_LIST)) | bl$(3)_dirs
-	@echo "  CC      $$<"
+	$$(ECHO) "  CC      $$<"
 	$$(Q)$$(CC) $$(TF_CFLAGS) $$(CFLAGS) -D$(IMAGE) $(MAKE_DEP) -c $$< -o $$@
 
 -include $(DEP)
@@ -237,7 +237,7 @@ $(eval DEP := $(patsubst %.o,%.d,$(OBJ)))
 $(eval IMAGE := IMAGE_BL$(call uppercase,$(3)))
 
 $(OBJ): $(2) $(filter-out %.d,$(MAKEFILE_LIST)) | bl$(3)_dirs
-	@echo "  AS      $$<"
+	$$(ECHO) "  AS      $$<"
 	$$(Q)$$(AS) $$(ASFLAGS) -D$(IMAGE) $(MAKE_DEP) -c $$< -o $$@
 
 -include $(DEP)
@@ -252,10 +252,11 @@ endef
 define MAKE_LD
 
 $(eval DEP := $(1).d)
+$(eval IMAGE := IMAGE_BL$(call uppercase,$(3)))
 
 $(1): $(2) $(filter-out %.d,$(MAKEFILE_LIST)) | bl$(3)_dirs
-	@echo "  PP      $$<"
-	$$(Q)$$(CPP) $$(CPPFLAGS) -P -D__ASSEMBLY__ -D__LINKER__ $(MAKE_DEP) -o $$@ $$<
+	$$(ECHO) "  PP      $$<"
+	$$(Q)$$(CPP) $$(CPPFLAGS) -P -D__ASSEMBLY__ -D__LINKER__ $(MAKE_DEP) -D$(IMAGE) -o $$@ $$<
 
 -include $(DEP)
 
@@ -337,13 +338,13 @@ LDPATHS = -L${LIB_DIR}
 LDLIBS += -l$(1)
 
 ifeq ($(USE_ROMLIB),1)
-LDLIBS := -lwrappers -lc
+LIBWRAPPER = -lwrappers
 endif
 
 all: ${LIB_DIR}/lib$(1).a
 
 ${LIB_DIR}/lib$(1).a: $(OBJS)
-	@echo "  AR      $$@"
+	$$(ECHO) "  AR      $$@"
 	$$(Q)$$(AR) cr $$@ $$?
 endef
 
@@ -391,7 +392,7 @@ $(ELF): romlib.bin
 endif
 
 $(ELF): $(OBJS) $(LINKERFILE) | bl$(1)_dirs libraries $(BL_LIBS)
-	@echo "  LD      $$@"
+	$$(ECHO) "  LD      $$@"
 ifdef MAKE_BUILD_STRINGS
 	$(call MAKE_BUILD_STRINGS, $(BUILD_DIR)/build_message.o)
 else
@@ -401,14 +402,14 @@ else
 endif
 	$$(Q)$$(LD) -o $$@ $$(TF_LDFLAGS) $$(LDFLAGS) -Map=$(MAPFILE) \
 		--script $(LINKERFILE) $(BUILD_DIR)/build_message.o \
-		$(OBJS) $(LDPATHS) $(LDLIBS) $(BL_LIBS)
+		$(OBJS) $(LDPATHS) $(LIBWRAPPER) $(LDLIBS) $(BL_LIBS)
 
 $(DUMP): $(ELF)
-	@echo "  OD      $$@"
+	$${ECHO} "  OD      $$@"
 	$${Q}$${OD} -dx $$< > $$@
 
 $(BIN): $(ELF)
-	@echo "  BIN     $$@"
+	$${ECHO} "  BIN     $$@"
 	$$(Q)$$(OC) -O binary $$< $$@
 	@${ECHO_BLANK_LINE}
 	@echo "Built $$@ successfully"
@@ -450,17 +451,24 @@ endef
 #   $(2) = input dts
 define MAKE_DTB
 
+# List of DTB file(s) to generate, based on DTS file basename list
 $(eval DOBJ := $(addprefix $(1)/,$(call SOURCES_TO_DTBS,$(2))))
+# List of the pre-compiled DTS file(s)
 $(eval DPRE := $(addprefix $(1)/,$(patsubst %.dts,%.pre.dts,$(notdir $(2)))))
-$(eval DEP := $(patsubst %.dtb,%.d,$(DOBJ)))
+# Dependencies of the pre-compiled DTS file(s) on its source and included files
+$(eval DTSDEP := $(patsubst %.dtb,%.o.d,$(DOBJ)))
+# Dependencies of the DT compilation on its pre-compiled DTS
+$(eval DTBDEP := $(patsubst %.dtb,%.d,$(DOBJ)))
 
 $(DOBJ): $(2) $(filter-out %.d,$(MAKEFILE_LIST)) | fdt_dirs
-	@echo "  CPP     $$<"
-	$$(Q)$$(CPP) $$(CPPFLAGS) -x assembler-with-cpp -o $(DPRE) $$<
-	@echo "  DTC     $$<"
-	$$(Q)$$(DTC) $$(DTC_FLAGS) -i fdts -d $(DEP) -o $$@ $(DPRE)
+	$${ECHO} "  CPP     $$<"
+	$(eval DTBS       := $(addprefix $(1)/,$(call SOURCES_TO_DTBS,$(2))))
+	$$(Q)$$(CPP) $$(CPPFLAGS) -x assembler-with-cpp -MT $(DTBS) -MMD -MF $(DTSDEP) -o $(DPRE) $$<
+	$${ECHO} "  DTC     $$<"
+	$$(Q)$$(DTC) $$(DTC_FLAGS) -i fdts -d $(DTBDEP) -o $$@ $(DPRE)
 
--include $(DEP)
+-include $(DTBDEP)
+-include $(DTSDEP)
 
 endef
 

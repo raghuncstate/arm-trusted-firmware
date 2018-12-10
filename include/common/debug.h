@@ -7,6 +7,8 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <utils_def.h>
+
 /*
  * The log output macros print output to the console. These macros produce
  * compiled log output only if the LOG_LEVEL defined in the makefile (or the
@@ -18,16 +20,18 @@
  * WARN("Warning %s.\n", "message") -> WARNING: Warning message.
  */
 
-#define LOG_LEVEL_NONE			0
-#define LOG_LEVEL_ERROR			10
-#define LOG_LEVEL_NOTICE		20
-#define LOG_LEVEL_WARNING		30
-#define LOG_LEVEL_INFO			40
-#define LOG_LEVEL_VERBOSE		50
+#define LOG_LEVEL_NONE			U(0)
+#define LOG_LEVEL_ERROR			U(10)
+#define LOG_LEVEL_NOTICE		U(20)
+#define LOG_LEVEL_WARNING		U(30)
+#define LOG_LEVEL_INFO			U(40)
+#define LOG_LEVEL_VERBOSE		U(50)
 
 #ifndef __ASSEMBLY__
 #include <cdefs.h>
+#include <console.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 /*
@@ -48,21 +52,21 @@
  */
 #define no_tf_log(fmt, ...)				\
 	do {						\
-		if (0) {				\
+		if (false) {				\
 			tf_log(fmt, ##__VA_ARGS__);	\
 		}					\
-	} while (0)
-
-#if LOG_LEVEL >= LOG_LEVEL_NOTICE
-# define NOTICE(...)	tf_log(LOG_MARKER_NOTICE __VA_ARGS__)
-#else
-# define NOTICE(...)	no_tf_log(LOG_MARKER_NOTICE __VA_ARGS__)
-#endif
+	} while (false)
 
 #if LOG_LEVEL >= LOG_LEVEL_ERROR
 # define ERROR(...)	tf_log(LOG_MARKER_ERROR __VA_ARGS__)
 #else
 # define ERROR(...)	no_tf_log(LOG_MARKER_ERROR __VA_ARGS__)
+#endif
+
+#if LOG_LEVEL >= LOG_LEVEL_NOTICE
+# define NOTICE(...)	tf_log(LOG_MARKER_NOTICE __VA_ARGS__)
+#else
+# define NOTICE(...)	no_tf_log(LOG_MARKER_NOTICE __VA_ARGS__)
 #endif
 
 #if LOG_LEVEL >= LOG_LEVEL_WARNING
@@ -83,8 +87,20 @@
 # define VERBOSE(...)	no_tf_log(LOG_MARKER_VERBOSE __VA_ARGS__)
 #endif
 
+#if ENABLE_BACKTRACE
+void backtrace(const char *cookie);
+#else
+#define backtrace(x)
+#endif
+
 void __dead2 do_panic(void);
-#define panic()	do_panic()
+
+#define panic()				\
+	do {				\
+		backtrace(__func__);	\
+		(void)console_flush();	\
+		do_panic();		\
+	} while (false)
 
 /* Function called when stack protection check code detects a corrupted stack */
 void __dead2 __stack_chk_fail(void);

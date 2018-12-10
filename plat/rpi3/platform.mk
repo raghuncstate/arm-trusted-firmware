@@ -4,12 +4,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+include lib/libfdt/libfdt.mk
+include lib/xlat_tables_v2/xlat_tables.mk
+
 PLAT_INCLUDES		:=	-Iinclude/common/tbbr			\
 				-Iplat/rpi3/include
 
-PLAT_BL_COMMON_SOURCES	:=	drivers/console/aarch64/console.S	\
-				drivers/ti/uart/aarch64/16550_console.S	\
-				plat/rpi3/rpi3_common.c
+PLAT_BL_COMMON_SOURCES	:=	drivers/ti/uart/aarch64/16550_console.S	\
+				plat/rpi3/rpi3_common.c			\
+				${XLAT_TABLES_LIB_SRCS}
 
 BL1_SOURCES		+=	drivers/io/io_fip.c			\
 				drivers/io/io_memmap.c			\
@@ -37,12 +40,8 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				plat/rpi3/aarch64/plat_helpers.S	\
 				plat/rpi3/rpi3_bl31_setup.c		\
 				plat/rpi3/rpi3_pm.c			\
-				plat/rpi3/rpi3_topology.c
-
-# Translation tables library
-include lib/xlat_tables_v2/xlat_tables.mk
-
-PLAT_BL_COMMON_SOURCES	+=	${XLAT_TABLES_LIB_SRCS}
+				plat/rpi3/rpi3_topology.c		\
+				${LIBFDT_SRCS}
 
 # Tune compiler for Cortex-A53
 ifeq ($(notdir $(CC)),armclang)
@@ -85,9 +84,6 @@ ERRATA_A53_855873		:= 1
 
 WORKAROUND_CVE_2017_5715	:= 0
 
-# Disable the PSCI platform compatibility layer by default
-ENABLE_PLAT_COMPAT		:= 0
-
 # Disable stack protector by default
 ENABLE_STACK_PROTECTOR	 	:= 0
 
@@ -100,9 +96,6 @@ SEPARATE_CODE_AND_RODATA	:= 1
 # Use Coherent memory
 USE_COHERENT_MEM		:= 1
 
-# Enable new version of image loading
-LOAD_IMAGE_V2			:= 1
-
 # Use multi console API
 MULTI_CONSOLE_API		:= 1
 
@@ -114,6 +107,13 @@ RPI3_BL33_IN_AARCH32		:= 0
 
 # Assume that BL33 isn't the Linux kernel by default
 RPI3_DIRECT_LINUX_BOOT		:= 0
+
+# UART to use at runtime. -1 means the runtime UART is disabled.
+# Any other value means the default UART will be used.
+RPI3_RUNTIME_UART		:= -1
+
+# Use normal memory mapping for ROM, FIP, SRAM and DRAM
+RPI3_USE_UEFI_MAP		:= 0
 
 # BL32 location
 RPI3_BL32_RAM_LOCATION	:= tdram
@@ -132,6 +132,8 @@ $(eval $(call add_define,RPI3_BL32_RAM_LOCATION_ID))
 $(eval $(call add_define,RPI3_BL33_IN_AARCH32))
 $(eval $(call add_define,RPI3_DIRECT_LINUX_BOOT))
 $(eval $(call add_define,RPI3_PRELOADED_DTB_BASE))
+$(eval $(call add_define,RPI3_RUNTIME_UART))
+$(eval $(call add_define,RPI3_USE_UEFI_MAP))
 
 # Verify build config
 # -------------------
@@ -140,10 +142,6 @@ ifneq (${RPI3_DIRECT_LINUX_BOOT}, 0)
   ifndef RPI3_PRELOADED_DTB_BASE
     $(error Error: RPI3_PRELOADED_DTB_BASE needed if RPI3_DIRECT_LINUX_BOOT=1)
   endif
-endif
-
-ifneq (${LOAD_IMAGE_V2}, 1)
-  $(error Error: rpi3 needs LOAD_IMAGE_V2=1)
 endif
 
 ifneq (${MULTI_CONSOLE_API}, 1)
@@ -181,8 +179,6 @@ ifneq (${TRUSTED_BOARD_BOOT},0)
 
     include drivers/auth/mbedtls/mbedtls_crypto.mk
     include drivers/auth/mbedtls/mbedtls_x509.mk
-
-    USE_TBBR_DEFS	:=	1
 
     AUTH_SOURCES	:=	drivers/auth/auth_mod.c			\
 				drivers/auth/crypto_mod.c		\

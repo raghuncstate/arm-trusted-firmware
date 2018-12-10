@@ -602,6 +602,30 @@ enum pm_ret_status pm_secure_rsaaes(uint32_t address_low,
 }
 
 /**
+ * pm_aes_engine() - Aes data blob encryption/decryption
+ * This function provides access to the xilsecure library to
+ * encrypt/decrypt data blobs.
+ *
+ * address_low: lower 32-bit address of the AesParams structure
+ *
+ * address_high: higher 32-bit address of the AesParams structure
+ *
+ * value:        Returned output value
+ *
+ * @return       Returns status, either success or error+reason
+ */
+enum pm_ret_status pm_aes_engine(uint32_t address_high,
+				 uint32_t address_low,
+				 uint32_t *value)
+{
+	uint32_t payload[PAYLOAD_ARG_CNT];
+
+	/* Send request to the PMU */
+	PM_PACK_PAYLOAD3(payload, PM_SECURE_AES, address_high, address_low);
+	return pm_ipi_send_sync(primary_proc, payload, value, 1);
+}
+
+/**
  * pm_pinctrl_request() - Request Pin from firmware
  * @pin		Pin number to request
  *
@@ -710,6 +734,19 @@ enum pm_ret_status pm_ioctl(enum pm_node_id nid,
 			    unsigned int *value)
 {
 	return pm_api_ioctl(nid, ioctl_id, arg1, arg2, value);
+}
+
+/**
+ * pm_clock_get_num_clocks - PM call to request number of clocks
+ * @nclockss: Number of clocks
+ *
+ * This function is used by master to get number of clocks.
+ *
+ * Return: Returns status, either success or error+reason.
+ */
+static enum pm_ret_status pm_clock_get_num_clocks(uint32_t *nclocks)
+{
+	return pm_api_clock_get_num_clocks(nclocks);
 }
 
 /**
@@ -1118,6 +1155,10 @@ enum pm_ret_status pm_query_data(enum pm_query_id qid,
 						(uint16_t *)&data[1]);
 		data[0] = (unsigned int)ret;
 		break;
+	case PM_QID_CLOCK_GET_NUM_CLOCKS:
+		ret = pm_clock_get_num_clocks(&data[1]);
+		data[0] = (unsigned int)ret;
+		break;
 	default:
 		ret = PM_RET_ERROR_ARGS;
 		WARN("Unimplemented query service call: 0x%x\n", qid);
@@ -1165,4 +1206,34 @@ enum pm_ret_status pm_secure_image(uint32_t address_low,
 	PM_PACK_PAYLOAD5(payload, PM_SECURE_IMAGE, address_high, address_low,
 			 key_hi, key_lo);
 	return pm_ipi_send_sync(primary_proc, payload, value, 2);
+}
+
+/**
+ * pm_fpga_read - Perform the fpga configuration readback
+ *
+ * @reg_numframes: Configuration register offset (or) Number of frames to read
+ * @address_low: lower 32-bit Linear memory space address
+ * @address_high: higher 32-bit Linear memory space address
+ * @readback_type: Type of fpga readback operation
+ *		   0 -- Configuration Register readback
+ *		   1 -- Configuration Data readback
+ * @value:	Value to read
+ *
+ * This function provides access to the xilfpga library to read
+ * the PL configuration.
+ *
+ * Return: Returns status, either success or error+reason.
+ */
+enum pm_ret_status pm_fpga_read(uint32_t reg_numframes,
+				uint32_t address_low,
+				uint32_t address_high,
+				uint32_t readback_type,
+				uint32_t *value)
+{
+	uint32_t payload[PAYLOAD_ARG_CNT];
+
+	/* Send request to the PMU */
+	PM_PACK_PAYLOAD5(payload, PM_FPGA_READ, reg_numframes, address_low,
+			 address_high, readback_type);
+	return pm_ipi_send_sync(primary_proc, payload, value, 1);
 }

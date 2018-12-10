@@ -5,7 +5,6 @@
  */
 
 #include <arch_helpers.h>
-#include <arm_gic.h>
 #include <assert.h>
 #include <bl_common.h>
 #include <cci.h>
@@ -15,8 +14,11 @@
 #include <generic_delay_timer.h>
 #include <gicv2.h>
 #include <hi3660.h>
+#include <mmio.h>
 #include <hisi_ipc.h>
 #include <interrupt_mgmt.h>
+#include <interrupt_props.h>
+#include <pl011.h>
 #include <platform.h>
 #include <platform_def.h>
 
@@ -44,21 +46,24 @@
 
 static entry_point_info_t bl32_ep_info;
 static entry_point_info_t bl33_ep_info;
+static console_pl011_t console;
 
 /******************************************************************************
  * On a GICv2 system, the Group 1 secure interrupts are treated as Group 0
  * interrupts.
  *****************************************************************************/
-const unsigned int g0_interrupt_array[] = {
-	IRQ_SEC_PHY_TIMER,
-	IRQ_SEC_SGI_0
+static const interrupt_prop_t g0_interrupt_props[] = {
+	INTR_PROP_DESC(IRQ_SEC_PHY_TIMER, GIC_HIGHEST_SEC_PRIORITY,
+		       GICV2_INTR_GROUP0, GIC_INTR_CFG_LEVEL),
+	INTR_PROP_DESC(IRQ_SEC_SGI_0, GIC_HIGHEST_SEC_PRIORITY,
+		       GICV2_INTR_GROUP0, GIC_INTR_CFG_LEVEL),
 };
 
 const gicv2_driver_data_t hikey960_gic_data = {
 	.gicd_base = GICD_REG_BASE,
 	.gicc_base = GICC_REG_BASE,
-	.g0_interrupt_num = ARRAY_SIZE(g0_interrupt_array),
-	.g0_interrupt_array = g0_interrupt_array,
+	.interrupt_props = g0_interrupt_props,
+	.interrupt_props_num = ARRAY_SIZE(g0_interrupt_props),
 };
 
 static const int cci_map[] = {
@@ -78,10 +83,13 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 	return NULL;
 }
 
-void bl31_early_platform_setup(void *from_bl2,
-			       void *plat_params_from_bl2)
+void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
+				u_register_t arg2, u_register_t arg3)
 {
 	unsigned int id, uart_base;
+	void *from_bl2;
+
+	from_bl2 = (void *) arg0;
 
 	generic_delay_timer_init();
 	hikey960_read_boardid(&id);
@@ -91,7 +99,8 @@ void bl31_early_platform_setup(void *from_bl2,
 		uart_base = PL011_UART6_BASE;
 
 	/* Initialize the console to provide early debug support */
-	console_init(uart_base, PL011_UART_CLK_IN_HZ, PL011_BAUDRATE);
+	console_pl011_register(uart_base, PL011_UART_CLK_IN_HZ,
+			       PL011_BAUDRATE, &console);
 
 	/* Initialize CCI driver */
 	cci_init(CCI400_REG_BASE, cci_map, ARRAY_SIZE(cci_map));
@@ -135,6 +144,19 @@ void bl31_plat_arch_setup(void)
 			BL31_COHERENT_RAM_LIMIT);
 }
 
+static void hikey960_edma_init(void)
+{
+	int i;
+	uint32_t non_secure;
+
+	non_secure = EDMAC_SEC_CTRL_INTR_SEC | EDMAC_SEC_CTRL_GLOBAL_SEC;
+	mmio_write_32(EDMAC_SEC_CTRL, non_secure);
+
+	for (i = 0; i < EDMAC_CHANNEL_NUMS; i++) {
+		mmio_write_32(EDMAC_AXI_CONF(i), (1 << 6) | (1 << 18));
+	}
+}
+
 void bl31_platform_setup(void)
 {
 	/* Initialize the GIC driver, cpu and distributor interfaces */
@@ -142,6 +164,8 @@ void bl31_platform_setup(void)
 	gicv2_distif_init();
 	gicv2_pcpu_distif_init();
 	gicv2_cpuif_enable();
+
+	hikey960_edma_init();
 
 	hisi_ipc_init();
 }

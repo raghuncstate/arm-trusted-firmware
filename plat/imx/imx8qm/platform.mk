@@ -26,16 +26,13 @@ BL31_SOURCES		+=	plat/imx/common/lpuart_console.S	\
 				lib/xlat_tables/xlat_tables_common.c		\
 				lib/cpus/aarch64/cortex_a53.S			\
 				lib/cpus/aarch64/cortex_a72.S			\
-				drivers/console/aarch64/console.S		\
 				drivers/arm/cci/cci.c				\
 				${IMX_GIC_SOURCES}				\
 
 include plat/imx/common/sci/sci_api.mk
 
-ENABLE_PLAT_COMPAT	:=	0
 USE_COHERENT_MEM	:=	1
 RESET_TO_BL31		:=	1
-ARM_GIC_ARCH		:=	3
 A53_DISABLE_NON_TEMPORAL_HINT := 0
 MULTI_CONSOLE_API	:=	1
 ERRATA_A72_859971	:=	1

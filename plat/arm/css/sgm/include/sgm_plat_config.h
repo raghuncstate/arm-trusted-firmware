@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef __SGM_PLAT_CONFIG_H__
-#define __SGM_PLAT_CONFIG_H__
+#ifndef SGM_PLAT_CONFIG_H
+#define SGM_PLAT_CONFIG_H
 
-#include <arm_gic.h>
 #include <ccn.h>
 #include <gicv3.h>
 
@@ -40,4 +39,5 @@ typedef struct css_plat_config {
 
 void plat_config_init(void);
 css_plat_config_t *get_plat_config(void);
-#endif /* __SGM_PLAT_CONFIG_H__ */
+
+#endif /* SGM_PLAT_CONFIG_H */

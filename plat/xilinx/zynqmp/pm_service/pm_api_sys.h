@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _PM_API_SYS_H_
-#define _PM_API_SYS_H_
+#ifndef PM_API_SYS_H
+#define PM_API_SYS_H
 
 #include <stdint.h>
 #include "pm_defs.h"
@@ -23,6 +23,7 @@ enum pm_query_id {
 	PM_QID_PINCTRL_GET_FUNCTION_NAME,
 	PM_QID_PINCTRL_GET_FUNCTION_GROUPS,
 	PM_QID_PINCTRL_GET_PIN_GROUPS,
+	PM_QID_CLOCK_GET_NUM_CLOCKS,
 };
 
 /**********************************************************
@@ -165,4 +166,14 @@ enum pm_ret_status pm_secure_image(uint32_t address_low,
 				   uint32_t key_lo,
 				   uint32_t key_hi,
 				   uint32_t *value);
-#endif /* _PM_API_SYS_H_ */
+
+enum pm_ret_status pm_fpga_read(uint32_t reg_numframes,
+				uint32_t address_low,
+				uint32_t address_high,
+				uint32_t readback_type,
+				uint32_t *value);
+enum pm_ret_status pm_aes_engine(uint32_t address_high,
+				 uint32_t address_low,
+				 uint32_t  *value);
+
+#endif /* PM_API_SYS_H */

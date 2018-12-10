@@ -8,8 +8,8 @@
  * ZynqMP system level PM-API functions for pin control.
  */
 
-#ifndef _PM_API_IOCTL_H_
-#define _PM_API_IOCTL_H_
+#ifndef PM_API_IOCTL_H
+#define PM_API_IOCTL_H
 
 #include "pm_common.h"
 
@@ -32,6 +32,11 @@ enum {
 	IOCTL_READ_GGS,
 	IOCTL_WRITE_PGGS,
 	IOCTL_READ_PGGS,
+	/* IOCTL for ULPI reset */
+	IOCTL_ULPI_RESET,
+	/* Set healthy bit value */
+	IOCTL_SET_BOOT_HEALTH_STATUS,
+	IOCTL_AFI,
 };
 
 //RPU operation mode
@@ -75,4 +80,4 @@ enum pm_ret_status pm_api_ioctl(enum pm_node_id nid,
 				unsigned int arg1,
 				unsigned int arg2,
 				unsigned int *value);
-#endif /* _PM_API_IOCTL_H_ */
+#endif /* PM_API_IOCTL_H */
